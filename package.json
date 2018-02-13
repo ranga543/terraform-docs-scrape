@@ -1,0 +1,23 @@
+{
+  "name": "terraform-docs-scrape",
+  "version": "1.0.0",
+  "description": "Convert terraform html docs to json",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Ranga Reddy Sabbasani",
+  "license": "ISC",
+  "dependencies": {
+    "cheerio": "1.0.0-rc.2",
+    "marked": "^0.3.12",
+    "request": "2.83.0",
+    "request-promise": "^4.2.2"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.7",
+    "@types/marked": "^0.3.0",
+    "@types/request-promise": "^4.1.41"
+  }
+}

@@ -1,0 +1,6 @@
+.vscode/*
+node_modules/*
+*.js
+*.js.map
+terraform-provider-aws/*
+terraform-provider-azurerm/*
