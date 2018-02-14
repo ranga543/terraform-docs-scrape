@@ -106,6 +106,7 @@ function parseResourcePage(resource: IResource, filePath: string): Promise<IReso
             // tslint:disable-next-line:typedef
             var $ = cheerio.load(result);
             resource.args = parseResourcePageArgs($);
+            parseNestedBlocksArgs($, resource.args);
             resource.attrs = parseResourcePageAttrs($);
             resolve(resource);
         });
@@ -124,10 +125,79 @@ function parseResourcePageArgs($: CheerioStatic): IFieldDef[] {
             var field: string = liItem.find("code").first().text();
             var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
             console.log(field);
-            defs.push({ name: field, description: desc, args: [] });
+            var def: IFieldDef = { name: field, description: desc, args: [] };
+            parseChildArgsOrAttrs(liItem.html(), def);
+            if (field != null && field.length > 0 && field.indexOf("/") === -1) {
+                defs.push(def);
+            }
         });
     }
     return defs;
+}
+
+function searchArgs(args: IFieldDef[], search: string): IFieldDef {
+    // var formatSearch: string = search.replace(/_|-|./g, " ");
+    for (let i: number = 0; i < args.length; i++) {
+        let a: IFieldDef = args[i];
+        // tslint:disable-next-line:triple-equals
+        if (search.toLowerCase().includes(a.name.replace(/_|-/g, " ").toLowerCase())) {
+            return a;
+        }
+        if (a.args.length > 0) {
+            searchArgs(a.args, search);
+        }
+    }
+    return null;
+}
+
+function parseNestedBlocksArgs($: CheerioStatic, args: IFieldDef[]): void {
+    // tslint:disable-next-line:typedef
+    var argsEle = $("#argument-reference").nextUntil("#attributes-reference").filter("ul");
+    argsEle.nextUntil("#attributes-reference").filter("ul").each((i, e) => {
+        // tslint:disable-next-line:typedef
+        var currentUlTag = $(e);
+        if(currentUlTag.find("code").length > 0) {
+           var formatSearch: string = currentUlTag.prev().text().replace(/_|-/g, " ");
+           var def: IFieldDef = searchArgs(args, formatSearch);
+           if (def != null && def.name !== "") {
+                currentUlTag.children("li").each((ai, ae) => {
+                    // tslint:disable-next-line:typedef
+                    var liItem = $(ae);
+                    var field: string = liItem.find("code").first().text();
+                    var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
+                    console.log(field);
+                    var childDef: IFieldDef = { name: field, description: desc, args: [] };
+                    parseChildArgsOrAttrs(liItem.html(), def);
+                    if (field != null && field.length > 0 && field.indexOf("/") === -1) {
+                        def.args.push(childDef);
+                    }
+                });
+           }
+        }
+    });
+}
+
+function parseChildArgsOrAttrs(a: string, item: IFieldDef): void {
+    // tslint:disable-next-line:typedef
+    var $ = cheerio.load(a);
+    var l:number = $("ul").length;
+    console.log(l);
+    if (l > 0) {
+        // tslint:disable-next-line:typedef
+        var ulTag = $("ul");
+        ulTag.children("li").each((i, e) => {
+            // tslint:disable-next-line:typedef
+            var a = $(e);
+            var field: string = a.find("code").first().text();
+            var desc: string = a.text().replace(field, "").replace("-", "").trim();
+            var def: IFieldDef = { name: field, description: desc, args: [] };
+            if (field != null && field.length > 0 && field.indexOf("/") === -1) {
+                item.args.push(def);
+            }
+            console.log(field);
+            parseChildArgsOrAttrs(a.html(), def);
+        });
+    }
 }
 
 function parseResourcePageAttrs($: CheerioStatic): IFieldDef[] {
@@ -141,8 +211,12 @@ function parseResourcePageAttrs($: CheerioStatic): IFieldDef[] {
             var liItem = $(ae);
             var field: string = liItem.find("code").first().text();
             var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
+            var def: IFieldDef = { name: field, description: desc, args: [] };
             console.log(field);
-            defs.push({ name: field, description: desc, args: [] });
+            parseChildArgsOrAttrs(liItem.html(), def);
+            if (field != null && field.length > 0 && field.indexOf("/") === -1) {
+                defs.push(def);
+            }
         });
     }
     return defs;
