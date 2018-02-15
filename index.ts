@@ -192,6 +192,9 @@ function parseChildArgsOrAttrs(a: string, item: IFieldDef): void {
             var desc: string = a.text().replace(field, "").replace("-", "").trim();
             var def: IFieldDef = { name: field, description: desc, args: [] };
             if (field != null && field.length > 0 && field.indexOf("/") === -1) {
+                if (field.includes(`${item.name}.`)) {
+                    def.name = def.name.replace(`${item.name}.`, "");
+                }
                 item.args.push(def);
             }
             console.log(field);
@@ -225,7 +228,7 @@ function parseResourcePageAttrs($: CheerioStatic): IFieldDef[] {
 Promise.all(providers.map(getProviderPage)).then((results) => {
     results.forEach((v) => {
         Promise.all(parseProvdierPage(v.result, v.provider)).then((d) => {
-            fs.writeFile(`${v.provider.name}.json`, JSON.stringify(d, null, 4), (err) => {
+            fs.writeFile(`${v.provider.name}.json`, JSON.stringify(d, null, 0), (err) => {
                 console.log(`File successfully written! - Check your project directory for the ${v.provider.name}.json file`);
             });
         });
