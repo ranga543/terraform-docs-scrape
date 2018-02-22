@@ -4,3 +4,4 @@ node_modules/*
 *.js.map
 terraform-provider-aws/*
 terraform-provider-azurerm/*
+terraform-provider-google/*
