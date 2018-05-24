@@ -205,7 +205,9 @@ function parseProvdierPage($: CheerioStatic, p: IProvider): Promise<IResource>[]
                 console.log(`File path: ${filePath}`);
                 var rType: string = pathParts[pathParts.length - 2] === "d" ? "data_source" : "resource";
                 var r: IResource = {name: itemName, type: rType, url: itemUrl, groupName: groupName, args: [], attrs: []};
-                promises.push(parseResourcePage(r, filePath));
+                if (path.dirname(filePath).indexOf("guides") === -1) {
+                    promises.push(parseResourcePage(r, filePath));
+                }
             });
         }
     });
