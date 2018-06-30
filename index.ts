@@ -3,6 +3,7 @@ import * as marked from "marked";
 import * as cheerio from "cheerio";
 import * as rp from "request-promise";
 import * as path from "path";
+var glob: any = require("glob");
 
 const terraformBaseUrl: string = "https://www.terraform.io";
 interface IProvider {
@@ -216,26 +217,24 @@ function parseProvdierPage($: CheerioStatic, p: IProvider): Promise<IResource>[]
 
 function parseResourcePage(resource: IResource, filePath: string): Promise<IResource> {
     return new Promise((resolve, reject) => {
-        if (!fs.existsSync(path.resolve(__dirname, filePath))) {
-            filePath = filePath.substr(0, filePath.lastIndexOf(".")) + ".markdown";
-            if (!fs.existsSync(path.resolve(__dirname, filePath))) {
-                filePath = filePath.substr(0, filePath.lastIndexOf(".")) + ".md";
-                if (!fs.existsSync(path.resolve(__dirname, filePath))) {
-                    filePath = filePath.substr(0, filePath.lastIndexOf(".")) + ".html.markdown";
+        // tslint:disable-next-line:typedef
+        glob(filePath.substr(0, filePath.lastIndexOf(".")) + ".*", {}, function (er, files) {
+            if (er) {
+                console.log("Error ocurred while searching for " + filePath);
+                reject(er);
+            }
+            var file: string = fs.readFileSync(path.resolve(__dirname, files[0])) + "";
+            marked(file, (err, result) => {
+                if (err) {
+                    reject(err);
                 }
-            }
-        }
-        var file: string = fs.readFileSync(path.resolve(__dirname, filePath)) + "";
-        marked(file, (err, result) => {
-            if (err) {
-                reject(err);
-            }
-            // tslint:disable-next-line:typedef
-            var $ = cheerio.load(result);
-            resource.args = parseResourcePageArgs($);
-            parseNestedBlocksArgs($, resource.args);
-            resource.attrs = parseResourcePageAttrs($);
-            resolve(resource);
+                // tslint:disable-next-line:typedef
+                var $ = cheerio.load(result);
+                resource.args = parseResourcePageArgs($);
+                parseNestedBlocksArgs($, resource.args);
+                resource.attrs = parseResourcePageAttrs($);
+                resolve(resource);
+            });
         });
     });
 }
