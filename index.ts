@@ -151,7 +151,6 @@ function parseTerraformConfigPageArgs($: CheerioStatic, filter: string, recursiv
             var liItem = $(ae);
             var field: string = liItem.find("code").first().text();
             var desc: string = liItem.text().replace(field, "").trim();
-            console.log(field);
             var def: IFieldDef = { name: field, description: desc, args: [] };
             if (recursive) {
                 parseChildArgsOrAttrs(liItem.html(), def);
@@ -188,7 +187,6 @@ function parseProvdierPage($: CheerioStatic, p: IProvider): Promise<IResource>[]
             currentItem.find("li").each((si, se) => {
                 var groupName: string = "", itemName: string = "", itemUrl: string = "";
                 groupName = currentItem.children("a").first().text();
-                console.log(`${i}.${groupName}`);
 
                 console.log("Started processing");
 
@@ -199,11 +197,9 @@ function parseProvdierPage($: CheerioStatic, p: IProvider): Promise<IResource>[]
                 var itemPath: string = link.attr("href");
                 itemName = link.text();
                 itemUrl = terraformBaseUrl + itemPath;
-                console.log(`${si}.${itemName}`);
                 var pathParts: string[] = itemPath.split("/");
                 var filePath: string = path.join(p.name, "website","docs",
                 pathParts[pathParts.length - 2], pathParts[pathParts.length - 1]);
-                console.log(`File path: ${filePath}`);
                 var rType: string = pathParts[pathParts.length - 2] === "d" ? "data_source" : "resource";
                 var r: IResource = {name: itemName, type: rType, url: itemUrl, groupName: groupName, args: [], attrs: []};
                 if (path.dirname(filePath).indexOf("guides") === -1) {
@@ -217,24 +213,29 @@ function parseProvdierPage($: CheerioStatic, p: IProvider): Promise<IResource>[]
 
 function parseResourcePage(resource: IResource, filePath: string): Promise<IResource> {
     return new Promise((resolve, reject) => {
+        console.log(`Read content of file: ${filePath}`);
         // tslint:disable-next-line:typedef
         glob(filePath.substr(0, filePath.lastIndexOf(".")) + ".*", {}, function (er, files) {
             if (er) {
                 console.log("Error ocurred while searching for " + filePath);
                 reject(er);
             }
-            var file: string = fs.readFileSync(path.resolve(__dirname, files[0])) + "";
-            marked(file, (err, result) => {
-                if (err) {
-                    reject(err);
-                }
-                // tslint:disable-next-line:typedef
-                var $ = cheerio.load(result);
-                resource.args = parseResourcePageArgs($);
-                parseNestedBlocksArgs($, resource.args);
-                resource.attrs = parseResourcePageAttrs($);
-                resolve(resource);
-            });
+            if (files && files.length > 0) {
+                // reject(`Unable to find files for: ${filePath}`);
+
+                var file: string = fs.readFileSync(path.resolve(__dirname, files[0])) + "";
+                marked(file, (err, result) => {
+                    if (err) {
+                        reject(err);
+                    }
+                    // tslint:disable-next-line:typedef
+                    var $ = cheerio.load(result);
+                    resource.args = parseResourcePageArgs($);
+                    parseNestedBlocksArgs($, resource.args);
+                    resource.attrs = parseResourcePageAttrs($);
+                    resolve(resource);
+                });
+            }
         });
     });
 }
@@ -250,7 +251,6 @@ function parseResourcePageArgs($: CheerioStatic): IFieldDef[] {
             var liItem = $(ae);
             var field: string = liItem.find("code").first().text();
             var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
-            console.log(field);
             var def: IFieldDef = { name: field, description: desc, args: [] };
             parseChildArgsOrAttrs(liItem.html(), def);
             if (field != null && field.length > 0 && fieldRegex.test(def.name)) {
@@ -290,7 +290,6 @@ function parseNestedBlocksArgs($: CheerioStatic, args: IFieldDef[]): void {
            var liItem = $(ae);
            var field: string = liItem.find("code").first().text();
            var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
-           console.log(field);
            var childDef: IFieldDef = { name: field, description: desc, args: [] };
            parseChildArgsOrAttrs(liItem.html(), def);
            if (field != null && field.length > 0 && fieldRegex.test(field)) {
@@ -309,7 +308,6 @@ function parseChildArgsOrAttrs(a: string, item: IFieldDef): void {
     // tslint:disable-next-line:typedef
     var $ = cheerio.load(a);
     var l:number = $("ul").length;
-    console.log(l);
     if (l > 0) {
         // tslint:disable-next-line:typedef
         var ulTag = $("ul");
@@ -328,7 +326,6 @@ function parseChildArgsOrAttrs(a: string, item: IFieldDef): void {
                     item.args.push(def);
                 }
             }
-            console.log(field);
             parseChildArgsOrAttrs(a.html(), def);
         });
     }
@@ -346,7 +343,6 @@ function parseResourcePageAttrs($: CheerioStatic): IFieldDef[] {
             var field: string = liItem.find("code").first().text();
             var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
             var def: IFieldDef = { name: field, description: desc, args: [] };
-            console.log(field);
             parseChildArgsOrAttrs(liItem.html(), def);
             if (field != null && field.length > 0 && fieldRegex.test(def.name)) {
                 defs.push(def);

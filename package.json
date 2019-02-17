@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/cheerio": "0.22.7",
     "@types/marked": "0.3.0",
-    "@types/request-promise": "4.1.41"
+    "@types/request-promise": "4.1.41",
+    "typescript": "^3.3.3"
   }
 }
