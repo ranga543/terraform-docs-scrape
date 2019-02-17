@@ -34,7 +34,7 @@ interface IFieldDef {
 }
 
 let providers: IProvider[] = new Array<IProvider>();
-providers.push({name: "terraform-provider-aws", url: `${terraformBaseUrl}/docs/providers/aws/index.html`});
+providers.push({ name: "terraform-provider-aws", url: `${terraformBaseUrl}/docs/providers/aws/index.html` });
 providers.push({name: "terraform-provider-azurerm", url: `${terraformBaseUrl}/docs/providers/azurerm/index.html`});
 providers.push({name: "terraform-provider-google", url: `${terraformBaseUrl}/docs/providers/google/index.html`});
 
@@ -67,7 +67,7 @@ function getTerraformConfigInterpolation(): Promise<any> {
             var $ = cheerio.load(d);
             // h3 #supported-built-in-functions
             var defs: IFieldDef[] = parseTerraformConfigPageArgs($, "h3#supported-built-in-functions");
-            var k: any = {builtInFunctions: []};
+            var k: any = { builtInFunctions: [] };
             k.builtInFunctions = defs;
             resolve(k);
         }).then((error) => {
@@ -83,7 +83,7 @@ function getTerraformConfigResources(): Promise<any> {
             var $ = cheerio.load(d);
             // h3 #supported-built-in-functions
             var defs: IFieldDef[] = parseTerraformConfigPageArgs($, "h3#meta-parameters", true);
-            var k: any = {resource: []};
+            var k: any = { resource: [] };
             k.resource = defs;
             resolve(k);
         }).then((error) => {
@@ -99,7 +99,7 @@ function getTerraformConfigVariables(): Promise<any> {
             var $ = cheerio.load(d);
             // h3 #supported-built-in-functions
             var defs: IFieldDef[] = parseTerraformConfigPageArgs($, "h2#description");
-            var k: any = {variable: []};
+            var k: any = { variable: [] };
             k.variable = defs;
             resolve(k);
         }).then((error) => {
@@ -115,7 +115,7 @@ function getTerraformConfigOutputs(): Promise<any> {
             var $ = cheerio.load(d);
             // h3 #supported-built-in-functions
             var defs: IFieldDef[] = parseTerraformConfigPageArgs($, "h2#description");
-            var k: any = {output: []};
+            var k: any = { output: [] };
             k.output = defs;
             resolve(k);
         }).then((error) => {
@@ -131,7 +131,7 @@ function getTerraformConfigModules(): Promise<any> {
             var $ = cheerio.load(d);
             // h3 #supported-built-in-functions
             var defs: IFieldDef[] = parseTerraformConfigPageArgs($, "h2#description");
-            var k: any = {module: []};
+            var k: any = { module: [] };
             k.module = defs;
             resolve(k);
         }).then((error) => {
@@ -170,7 +170,7 @@ function getProviderPage(p: IProvider): Promise<IParsedProvider> {
         rp(p.url).then((d) => {
             // tslint:disable-next-line:typedef
             var $ = cheerio.load(d);
-            resolve({provider: p, result: $});
+            resolve({ provider: p, result: $ });
         }).then((error) => {
             reject(error);
         });
@@ -198,11 +198,11 @@ function parseProvdierPage($: CheerioStatic, p: IProvider): Promise<IResource>[]
                 itemName = link.text();
                 itemUrl = terraformBaseUrl + itemPath;
                 var pathParts: string[] = itemPath.split("/");
-                var filePath: string = path.join(p.name, "website","docs",
-                pathParts[pathParts.length - 2], pathParts[pathParts.length - 1]);
+                var filePath: string = path.join(p.name, "website", "docs",
+                    pathParts[pathParts.length - 2], pathParts[pathParts.length - 1]);
                 var rType: string = pathParts[pathParts.length - 2] === "d" ? "data_source" : "resource";
-                var r: IResource = {name: itemName, type: rType, url: itemUrl, groupName: groupName, args: [], attrs: []};
-                if (path.dirname(filePath).indexOf("guides") === -1) {
+                var r: IResource = { name: itemName, type: rType, url: itemUrl, groupName: groupName, args: [], attrs: [] };
+                if (path.dirname(filePath).indexOf("guides") === -1 && filePath.indexOf("?track=aws#aws")) {
                     promises.push(parseResourcePage(r, filePath));
                 }
             });
@@ -235,6 +235,7 @@ function parseResourcePage(resource: IResource, filePath: string): Promise<IReso
                     resource.attrs = parseResourcePageAttrs($);
                     resolve(resource);
                 });
+
             }
         });
     });
@@ -282,24 +283,24 @@ function parseNestedBlocksArgs($: CheerioStatic, args: IFieldDef[]): void {
     argsEle.nextUntil("#attributes-reference").filter("ul").each((i, e) => {
         // tslint:disable-next-line:typedef
         var currentUlTag = $(e);
-        if(currentUlTag.find("code").length > 0) {
-           var formatSearch: string = currentUlTag.prev().text().replace(/_|-/g, " ");
-           var def: IFieldDef = searchArgs(args, formatSearch);
-           currentUlTag.children("li").each((ai, ae) => {
-           // tslint:disable-next-line:typedef
-           var liItem = $(ae);
-           var field: string = liItem.find("code").first().text();
-           var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
-           var childDef: IFieldDef = { name: field, description: desc, args: [] };
-           parseChildArgsOrAttrs(liItem.html(), def);
-           if (field != null && field.length > 0 && fieldRegex.test(field)) {
-            if (def != null && def.name !== "") {
-               def.args.push(childDef);
-            } else {
-                args.push(childDef);
-            }
-           }
-        });
+        if (currentUlTag.find("code").length > 0) {
+            var formatSearch: string = currentUlTag.prev().text().replace(/_|-/g, " ");
+            var def: IFieldDef = searchArgs(args, formatSearch);
+            currentUlTag.children("li").each((ai, ae) => {
+                // tslint:disable-next-line:typedef
+                var liItem = $(ae);
+                var field: string = liItem.find("code").first().text();
+                var desc: string = liItem.text().replace(field, "").replace("-", "").trim();
+                var childDef: IFieldDef = { name: field, description: desc, args: [] };
+                parseChildArgsOrAttrs(liItem.html(), def);
+                if (field != null && field.length > 0 && fieldRegex.test(field)) {
+                    if (def != null && def.name !== "") {
+                        def.args.push(childDef);
+                    } else {
+                        args.push(childDef);
+                    }
+                }
+            });
         }
     });
 }
@@ -307,7 +308,7 @@ function parseNestedBlocksArgs($: CheerioStatic, args: IFieldDef[]): void {
 function parseChildArgsOrAttrs(a: string, item: IFieldDef): void {
     // tslint:disable-next-line:typedef
     var $ = cheerio.load(a);
-    var l:number = $("ul").length;
+    var l: number = $("ul").length;
     if (l > 0) {
         // tslint:disable-next-line:typedef
         var ulTag = $("ul");
@@ -318,7 +319,7 @@ function parseChildArgsOrAttrs(a: string, item: IFieldDef): void {
             var desc: string = a.text().replace(field, "").replace("-", "").trim();
             var def: IFieldDef = { name: field, description: desc, args: [] };
             if (field != null && field.length > 0 && item != null
-                && item !== undefined && item.name.length > 0 ) {
+                && item !== undefined && item.name.length > 0) {
                 if (field.includes(`${item.name}.`)) {
                     def.name = def.name.replace(`${item.name}.`, "").replace("#", "");
                 }
@@ -355,15 +356,15 @@ function parseResourcePageAttrs($: CheerioStatic): IFieldDef[] {
 Promise.all(providers.map(getProviderPage)).then((results) => {
     results.forEach((v) => {
         Promise.all(parseProvdierPage(v.result, v.provider)).then((d) => {
-            var data: {[key: string]: IResource} = d.filter((t) => t.type === "data_source").reduce((obj, item) => {
+            var data: { [key: string]: IResource } = d.filter((t) => t.type === "data_source").reduce((obj, item) => {
                 obj[item.name] = item;
                 return obj;
             }, {});
-            var resource: {[key: string]: IResource} = d.filter((t) => t.type === "resource").reduce((obj, item) => {
+            var resource: { [key: string]: IResource } = d.filter((t) => t.type === "resource").reduce((obj, item) => {
                 obj[item.name] = item;
                 return obj;
             }, {});
-            var out: ITerraformData = {data: data, resource: resource};
+            var out: ITerraformData = { data: data, resource: resource };
             fs.writeFile(`${v.provider.name}.json`, JSON.stringify(out, null, 0), (err) => {
                 console.log(`File successfully written! - Check your project directory for the ${v.provider.name}.json file`);
             });
@@ -373,6 +374,6 @@ Promise.all(providers.map(getProviderPage)).then((results) => {
 
 
 export interface ITerraformData {
-    data: {[key: string]: IResource};
-    resource: {[key: string]: IResource};
+    data: { [key: string]: IResource };
+    resource: { [key: string]: IResource };
 }
